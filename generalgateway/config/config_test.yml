@@ -1,0 +1,8 @@
+server:
+  address: ":8080"
+
+gin:
+  mode: "release"
+
+rpcclient:
+  greeter_address: "greeter:50051"

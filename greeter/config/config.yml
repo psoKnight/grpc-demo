@@ -1,0 +1,6 @@
+rpcserver:
+  protocol: "tcp"
+  address: ":50051"
+
+healthserver:
+  address: ":50052"

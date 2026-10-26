@@ -1,0 +1,7 @@
+/greeter/greeter
+/greeter/greeter.exe
+/greeter/docker/release/
+/generalgateway/generalgateway
+/generalgateway/generalgateway.exe
+/generalgateway/docker/release/
+*.log
