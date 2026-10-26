@@ -12,6 +12,7 @@
 
 ```text
 POST /v1/hello
+POST /v1/calculate
 GET  /status.html
 ```
 
@@ -22,7 +23,8 @@ HTTP 请求
   -> controller
   -> service
   -> grpc_client
-  -> greeter:50051
+     -> greeter:50051         /v1/hello
+     -> calculator:50053      /v1/calculate
 ```
 
 ## 编译方式
@@ -53,11 +55,12 @@ bash deploy.sh -b test
 ```yaml
 rpcclient:
   greeter_address: "greeter:50051"
+  calculator_address: "calculator:50053"
 ```
 
 执行过程：
 
-1. 调用 `../pbdata/greeterpb/pb.sh` 重新生成 protobuf 代码。
+1. 调用 `../pbdata/greeterpb/pb.sh` 和 `../pbdata/calculatorpb/pb.sh` 重新生成 protobuf 代码。
 2. 使用 `CGO_ENABLED=0 GOOS=linux GOARCH=amd64` 编译 Linux 二进制。
 3. 清空并重新生成 `docker/release`。
 4. 把 `config/config_test.yml` 复制为 `docker/release/conf/config.yml`。
@@ -90,9 +93,10 @@ gin:
 
 rpcclient:
   greeter_address: "greeter.example.internal:50051"
+  calculator_address: "calculator.example.internal:50053"
 ```
 
-正式编译前必须把 `rpcclient.greeter_address` 改为正式环境实际可访问的 gRPC 地址。
+正式编译前必须把两个 `rpcclient` 地址改为正式环境实际可访问的 gRPC 地址。
 
 ## 构建和推送镜像
 
@@ -143,19 +147,37 @@ go test ./...
 go vet ./...
 ```
 
-启动 `greeter` 后运行网关：
+分别启动 `greeter`、`calculator` 后运行网关：
 
 ```bash
 go run ./generalgateway
 ```
 
-调用接口：
+调用问候接口：
 
 ```bash
 curl -X POST http://localhost:8080/v1/hello \
   -H "Content-Type: application/json" \
   -d '{"name":"Codex"}'
 ```
+
+调用计算接口：
+
+```bash
+curl -X POST http://localhost:8080/v1/calculate \
+  -H "Content-Type: application/json" \
+  -d '{"operation":"add","left":21,"right":21}'
+```
+
+乘法请求：
+
+```bash
+curl -X POST http://localhost:8080/v1/calculate \
+  -H "Content-Type: application/json" \
+  -d '{"operation":"multiply","left":"6","right":"7"}'
+```
+
+成功响应为 `{"error_no":0,"error_msg":"成功","data":{"result":42}}`。`operation` 仅支持 `add` 和 `multiply`；`int64` 参数支持 JSON 数字或字符串，大整数建议使用字符串。
 
 ## 清理发布产物
 
@@ -164,4 +186,4 @@ cd generalgateway
 bash deploy.sh -b test delete
 ```
 
-注意：带 `delete` 参数时，除了删除 `docker/release`，还会删除公共 protobuf 生成代码。下一次编译会重新生成。
+注意：带 `delete` 参数时，除了删除 `docker/release`，还会删除两个服务的公共 protobuf 生成代码。下一次编译会重新生成。

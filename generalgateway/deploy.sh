@@ -39,8 +39,9 @@ select_config() {
 }
 
 build_pb() {
-    echo "greeterpb is building..."
+    echo "gRPC protobuf is building..."
     bash "${PROJECT_DIR}/pbdata/greeterpb/pb.sh"
+    bash "${PROJECT_DIR}/pbdata/calculatorpb/pb.sh"
 }
 
 build_release() {
@@ -94,6 +95,8 @@ delete_artifacts() {
     rm -rf "${SCRIPT_DIR}/docker/release"
     rm -f "${PROJECT_DIR}/pbdata/greeterpb/greeter.pb.go"
     rm -f "${PROJECT_DIR}/pbdata/greeterpb/greeter_grpc.pb.go"
+    rm -f "${PROJECT_DIR}/pbdata/calculatorpb/calculator.pb.go"
+    rm -f "${PROJECT_DIR}/pbdata/calculatorpb/calculator_grpc.pb.go"
     echo "${EXEFILE} release artifacts deleted"
 }
 

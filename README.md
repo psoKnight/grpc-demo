@@ -7,7 +7,15 @@
 ```text
 .
 ├── pbdata/greeterpb/             # gRPC 协议、生成代码和 pb.sh
+├── pbdata/calculatorpb/          # Calculator gRPC 协议、生成代码和 pb.sh
 ├── greeter/                      # 具体 gRPC 服务，对应参考项目中的 message/
+│   ├── config/
+│   ├── service/
+│   ├── main.go
+│   ├── start.sh
+│   ├── deploy.sh
+│   └── docker/Dockerfile
+├── calculator/                   # 独立的 Calculator gRPC 服务
 │   ├── config/
 │   ├── service/
 │   ├── main.go
@@ -34,13 +42,14 @@ HTTP 请求
   -> generalgateway/controller
   -> generalgateway/service
   -> generalgateway/grpc_client
-  -> pbdata/greeterpb
-  -> greeter/service
+     -> pbdata/greeterpb -> greeter/service
+     -> pbdata/calculatorpb -> calculator/service
 ```
 
 ## 微服务文档
 
 - [greeter 构建与部署](greeter/README.md)
+- [calculator 构建与部署](calculator/README.md)
 - [generalgateway 构建与部署](generalgateway/README.md)
 
 ## 本地运行
@@ -49,6 +58,12 @@ HTTP 请求
 
 ```bash
 go run ./greeter
+```
+
+另一个终端可启动 calculator：
+
+```bash
+go run ./calculator
 ```
 
 再启动 HTTP 网关：
@@ -65,6 +80,16 @@ curl -X POST http://localhost:8080/v1/hello \
   -d '{"name":"Codex"}'
 ```
 
+调用计算接口：
+
+```bash
+curl -X POST http://localhost:8080/v1/calculate \
+  -H "Content-Type: application/json" \
+  -d '{"operation":"add","left":21,"right":21}'
+```
+
+`operation` 支持 `add` 和 `multiply`。`left`、`right` 可使用 JSON 数字或字符串；大整数建议使用字符串避免客户端精度损失。
+
 ## 服务打包
 
 每个微服务拥有独立的 `start.sh`、`deploy.sh` 和 `docker/Dockerfile`，与参考项目保持一致。
@@ -73,6 +98,9 @@ curl -X POST http://localhost:8080/v1/hello \
 
 ```bash
 cd greeter
+./deploy.sh -b test
+
+cd ../calculator
 ./deploy.sh -b test
 
 cd ../generalgateway
@@ -94,6 +122,9 @@ docker/release/
 cd greeter
 IMAGE_REPO=harbor.example.com/grpc-demo ./deploy.sh -d 1.0.0 test
 
+cd ../calculator
+IMAGE_REPO=harbor.example.com/grpc-demo ./deploy.sh -d 1.0.0 test
+
 cd ../generalgateway
 IMAGE_REPO=harbor.example.com/grpc-demo ./deploy.sh -d 1.0.0 test
 ```
@@ -102,6 +133,9 @@ IMAGE_REPO=harbor.example.com/grpc-demo ./deploy.sh -d 1.0.0 test
 
 ```bash
 cd greeter
+IMAGE_REPO=harbor.example.com/grpc-demo ./deploy.sh -d 1.0.0 online
+
+cd ../calculator
 IMAGE_REPO=harbor.example.com/grpc-demo ./deploy.sh -d 1.0.0 online
 
 cd ../generalgateway
@@ -121,14 +155,15 @@ IMAGE_REPO=harbor.example.com/grpc-demo ./deploy.sh -d 1.0.0 test
 
 默认生成：
 
-- 测试镜像：`grpc-demo/greeter-test:VERSION`
-- 线上镜像：`grpc-demo/greeter:VERSION`
+- 测试镜像：`grpc-demo/greeter-test:VERSION`、`grpc-demo/calculator-test:VERSION`
+- 线上镜像：`grpc-demo/greeter:VERSION`、`grpc-demo/calculator:VERSION`
 
 网关测试配置通过 Docker 服务名访问 gRPC：
 
 ```yaml
 rpcclient:
   greeter_address: "greeter:50051"
+  calculator_address: "calculator:50053"
 ```
 
 ## 修改协议
@@ -141,7 +176,13 @@ protoc -I . --go_out=. --go_opt=paths=source_relative \
   pbdata/greeterpb/greeter.proto
 ```
 
-`deploy.sh` 构建前也会自动调用 `pbdata/greeterpb/pb.sh`。
+`deploy.sh` 构建前会自动调用两个服务的 `pb.sh`。
+
+Calculator 协议修改后重新生成：
+
+```bash
+bash pbdata/calculatorpb/pb.sh
+```
 
 ## 验证
 

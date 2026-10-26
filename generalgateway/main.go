@@ -38,6 +38,7 @@ func main() {
 	v1 := router.Group("/v1")
 	{
 		v1.POST("/hello", controller.Hello)
+		v1.POST("/calculate", controller.Calculate)
 	}
 
 	server := &http.Server{

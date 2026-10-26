@@ -1,8 +1,10 @@
 package grpc_client
 
 import (
+	"errors"
 	"fmt"
 
+	"grpc-demo/pbdata/calculatorpb"
 	"grpc-demo/pbdata/greeterpb"
 
 	"google.golang.org/grpc"
@@ -10,12 +12,15 @@ import (
 )
 
 var (
-	GreeterClient greeterpb.GreeterClient
-	greeterConn   *grpc.ClientConn
+	GreeterClient    greeterpb.GreeterClient
+	CalculatorClient calculatorpb.CalculatorClient
+	greeterConn      *grpc.ClientConn
+	calculatorConn   *grpc.ClientConn
 )
 
 type RpcClientConfig struct {
-	GreeterAddress string `yaml:"greeter_address"`
+	GreeterAddress    string `yaml:"greeter_address"`
+	CalculatorAddress string `yaml:"calculator_address"`
 }
 
 func newCommonConn(address string) (*grpc.ClientConn, error) {
@@ -35,15 +40,41 @@ func NewGreeterClient(address string) (greeterpb.GreeterClient, *grpc.ClientConn
 	return greeterpb.NewGreeterClient(conn), conn, nil
 }
 
+func NewCalculatorClient(address string) (calculatorpb.CalculatorClient, *grpc.ClientConn, error) {
+	fmt.Println("calculator address:", address)
+	conn, err := newCommonConn(address)
+	if err != nil {
+		return nil, nil, err
+	}
+	return calculatorpb.NewCalculatorClient(conn), conn, nil
+}
+
 func Init(conf RpcClientConfig) error {
 	var err error
 	GreeterClient, greeterConn, err = NewGreeterClient(conf.GreeterAddress)
-	return err
+	if err != nil {
+		return err
+	}
+
+	CalculatorClient, calculatorConn, err = NewCalculatorClient(conf.CalculatorAddress)
+	if err != nil {
+		_ = greeterConn.Close()
+		GreeterClient = nil
+		greeterConn = nil
+		return err
+	}
+	return nil
 }
 
 func Close() error {
-	if greeterConn == nil {
-		return nil
+	var errs []error
+	if greeterConn != nil {
+		errs = append(errs, greeterConn.Close())
+		greeterConn = nil
 	}
-	return greeterConn.Close()
+	if calculatorConn != nil {
+		errs = append(errs, calculatorConn.Close())
+		calculatorConn = nil
+	}
+	return errors.Join(errs...)
 }

@@ -6,3 +6,4 @@ gin:
 
 rpcclient:
   greeter_address: "greeter:50051"
+  calculator_address: "calculator:50053"

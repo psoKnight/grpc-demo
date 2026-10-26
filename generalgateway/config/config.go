@@ -41,6 +41,9 @@ func Init(fileName string) error {
 	if conf.GRpcClientConfig.GreeterAddress == "" {
 		return fmt.Errorf("rpcclient.greeter_address is required")
 	}
+	if conf.GRpcClientConfig.CalculatorAddress == "" {
+		return fmt.Errorf("rpcclient.calculator_address is required")
+	}
 
 	Conf = &conf
 	return nil
